@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NER ខ្មែរ - រកឈ្មោះពិសេសក្នុងអត្ថបទ</title>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --secondary: #0ea5e9;
+            --success: #10b981;
+            --person: #3b82f6;
+            --location: #10b981;
+            --organization: #f59e0b;
+            --date: #8b5cf6;
+            --money: #ef4444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kantumruy Pro', 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 3px solid var(--primary);
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header .khmer-title {
+            font-size: 3.2rem;
+            color: #dc2626;
+            font-weight: bold;
+        }
+        
+        .header .subtitle {
+            color: #64748b;
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        /* Main Content Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Input Section */
+        .input-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid #e2e8f0;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+        
+        .section-title i {
+            font-size: 1.8rem;
+        }
+        
+        /* Textarea */
+        .text-input {
+            width: 100%;
+            height: 300px;
+            padding: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border 0.3s;
+            font-family: 'Kantumruy Pro', sans-serif;
+        }
+        
+        .text-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+        
+        /* File Upload */
+        .file-upload {
+            margin-top: 15px;
+            padding: 20px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary);
+            background: #f8fafc;
+        }
+        
+        .file-upload i {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        /* Sample Texts */
+        .sample-texts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .sample-btn {
+            padding: 12px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .sample-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        
+        /* Control Buttons */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 2px solid #cbd5e1;
+        }
+        
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+        
+        /* Output Section */
+        .output-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid #e2e8f0;
+        }
+        
+        /* Entity Tags */
+        .entity-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 0 2px;
+            color: white;
+        }
+        
+        .person { background: var(--person); }
+        .location { background: var(--location); }
+        .organization { background: var(--organization); }
+        .date { background: var(--date); }
+        .money { background: var(--money); }
+        
+        /* Results Box */
+        .results-box {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+            display: block;
+        }
+        
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        /* Entity List */
+        .entity-list {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .entity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            margin-top: 40px;
+            color: #64748b;
+            font-size: 0.9rem;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 100;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1><span class="khmer-title">NER ខ្មែរ</span></h1>
+            <h2>Named Entity Recognition Platform</h2>
+            <p class="subtitle">ប្រព័ន្ធស្វែងរកឈ្មោះពិសេសក្នុងអត្ថបទខ្មែរ។ រកឃើញឈ្មោះមនុស្ស ទីតាំង និងអង្គការដោយស្វ័យប្រវត្តិ</p>
+            
+            <div class="controls" style="justify-content: center;">
+                <button class="btn btn-primary" onclick="analyzeText()">
+                    <i class="fas fa-play"></i> ចាប់ផ្ដើមប្រើ
+                </button>
+                <button class="btn btn-secondary" onclick="showTutorial()">
+                    <i class="fas fa-graduation-cap"></i> រៀនពីរបៀបប្រើ
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-grid">
+            <!-- Left Column: Input -->
+            <div class="input-section">
+                <div class="section-title">
+                    <i class="fas fa-keyboard"></i>
+                    <h3>បញ្ចូលអត្ថបទខ្មែរ</h3>
+                </div>
+                
+                <textarea 
+                    id="inputText" 
+                    class="text-input" 
+                    placeholder="វាយបញ្ចូលអត្ថបទខ្មែររបស់អ្នកនៅទីនេះ... ឬសាកល្បងជាមួយអត្ថបទគំរូខាងក្រោម។"
+                >នៅក្នុងពិធីសម្ពោធនៅខេត្តព្រះសីហនុ លោកនាយករដ្ឋមន្ត្រី ហ៊ុន ម៉ាណែត បានថ្លែងថា ក្រុមហ៊ុនចិន Huawei នឹងវិនិយោគ ១០០ លានដុល្លារក្នុងការកសាងអ៊ិនធឺណិត 5G ។ អ្នកអភិបាលខេត្ត លោក គឹម ស្រីថាន ក៏បានចូលរួមផងដែរ។ ការសម្រេចនេះត្រូវបានស្នើឡើងដោយក្រសួងប្រៃសណីយ៍ និងទូរគមនាគមន៍ កាលពីខែមុន។</textarea>
+                
+                <!-- File Upload -->
+                <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>អាប់ឡូតឯកសារ (PDF, DOC, TXT)</p>
+                    <small>ឬទម្លាក់ឯកសារនៅទីនេះ</small>
+                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" hidden>
+                </div>
+                
+                <!-- Sample Texts -->
+                <div class="sample-texts">
+                    <div class="sample-btn" onclick="loadSample('news')">
+                        <i class="fas fa-newspaper"></i>
+                        អត្ថបទព័ត៌មាន
+                    </div>
+                    <div class="sample-btn" onclick="loadSample('history')">
+                        <i class="fas fa-landmark"></i>
+                        ប្រវត្តិសាស្ត្រ
+                    </div>
+                    <div class="sample-btn" onclick="loadSample('business')">
+                        <i class="fas fa-briefcase"></i>
+                        អាជីវកម្ម
+                    </div>
+                    <div class="sample-btn" onclick="loadSample('literature')">
+                        <i class="fas fa-book"></i>
+                        អក្សរសាស្ត្រ
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="analyzeText()">
+                        <i class="fas fa-search"></i> វិភាគអត្ថបទ
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearText()">
+                        <i class="fas fa-eraser"></i> លុបទាំងអស់
+                    </button>
+                    <button class="btn btn-secondary" onclick="speakText()">
+                        <i class="fas fa-volume-up"></i> ស្ដាប់អត្ថបទ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Output -->
+            <div class="output-section">
+                <div class="section-title">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>លទ្ធផលវិភាគ</h3>
+                </div>
+                
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-number" id="personCount">0</span>
+                        <span class="stat-label">ឈ្មោះមនុស្ស</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="locationCount">0</span>
+                        <span class="stat-label">ទីតាំង</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="orgCount">0</span>
+                        <span class="stat-label">អង្គការ</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalCount">0</span>
+                        <span class="stat-label">សរុប</span>
+                    </div>
+                </div>
+                
+                <!-- Results Box -->
+                <div class="results-box" id="resultsBox">
+                    <p style="text-align: center; color: #94a3b8; padding: 40px;">
+                        <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+                        លទ្ធផលនឹងបង្ហាញនៅទីនេះ។<br>
+                        សូមបញ្ចូលអត្ថបទ រួចចុច "វិភាគអត្ថបទ"
+                    </p>
+                </div>
+                
+                <!-- Entity List -->
+                <div class="entity-list" id="entityList">
+                    <!-- Entities will be dynamically added here -->
+                </div>
+                
+                <!-- Export Buttons -->
+                <div class="controls" style="margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="exportResults('json')">
+                        <i class="fas fa-file-code"></i> JSON
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportResults('excel')">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportResults('pdf')">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                    <button class="btn btn-primary" onclick="copyResults()">
+                        <i class="fas fa-copy"></i> ចម្លង
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>កំពុងវិភាគអត្ថបទរបស់អ្នក...</p>
+            <p style="font-size: 0.9rem; color: #64748b;">នេះអាចយកពេល ២-៣ វិនាទី</p>
+        </div>
+
+        <!-- Legend -->
+        <div class="input-section" style="margin-top: 20px;">
+            <div class="section-title">
+                <i class="fas fa-key"></i>
+                <h3>ស្គាល់ប្រភេទឈ្មោះពិសេស</h3>
+            </div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="entity-tag person">ឈ្មោះ</div>
+                    <span>ឈ្មោះមនុស្ស</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="entity-tag location">ទីតាំង</div>
+                    <span>ទីតាំង/កន្លែង</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="entity-tag organization">អង្គការ</div>
+                    <span>អង្គការ/ក្រុមហ៊ុន</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="entity-tag date">កាលបរិច្ឆេទ</div>
+                    <span>ថ្ងៃខែឆ្នាំ</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="entity-tag money">ប្រាក់</div>
+                    <span>ចំនួនទឹកប្រាក់</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2024 NER ខ្មែរ - ប្រព័ន្ធស្វែងរកឈ្មោះពិសេស</p>
+            <p style="margin-top: 10px;">
+                <a href="#" style="color: var(--primary); margin: 0 10px;">អំពីយើង</a> | 
+                <a href="#" style="color: var(--primary); margin: 0 10px;">ការងាររបស់យើង</a> | 
+                <a href="#" style="color: var(--primary); margin: 0 10px;">API</a> | 
+                <a href="#" style="color: var(--primary); margin: 0 10px;">ទំនាក់ទំនង</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 0.8rem;">
+                បច្ចេកវិទ្យា: Machine Learning • Natural Language Processing • Khmer NLP
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Sample texts
+        const samples = {
+            news: `ភ្នំពេញ៖ នៅថ្ងៃទី១៥ ខែមករា ឆ្នាំ២០២៤ លោកនាយករដ្ឋមន្ត្រី ហ៊ុន ម៉ាណែត បានអញ្ជើញទៅកាន់ប្រទេសជប៉ុន។ ការអញ្ជើញនេះធ្វើឡើងតាមការអញ្ជើញរបស់លោកនាយករដ្ឋមន្ត្រីជប៉ុន ហ្វុយមីអូ គីស៊ីដា។ ក្រសួងការបរទេសកម្ពុជាបានឲ្យដឹងថា កិច្ចប្រជុំនឹងពិភាក្សាអំពីកិច្ចសហប្រតិបត្តិការក្នុងតំបន់។`,
+            
+            history: `ព្រះបាទជ័យវរ្ម័នទី៧ គឺជាព្រះមហាក្សត្រនៃចក្រភពខ្មែរ ពីឆ្នាំ១១៨១ ដល់ឆ្នាំ១២១៨។ ទ្រង់បានសាងប្រាសាទជាច្រើនដូចជាប្រាសាទបាយ័ន នៅនគរធំ ខេត្តសៀមរាប។ ព្រះអង្គក៏ជាអ្នកគ្រប់គ្រងដ៏ខ្លាំងក្លាមួយរូបក្នុងប្រវត្តិសាស្ត្រអាស៊ីអាគ្នេយ៍។`,
+            
+            business: `ក្រុមហ៊ុន ACLEDA Bank បានរាយការណ៍ថា ប្រាក់ចំណេញប្រចាំឆ្នាំ២០២៣ កើនឡើង២០% ដោយទទួលបាន ៥០០ លានដុល្លារ។ លោក អ៊ិន ជាន់ ប្រធានក្រុមហ៊ុន បានថ្លែងក្នុងពិធីសម្ពោធនៅទីស្នាក់ការកណ្តាល ភ្នំពេញ។ ក្រុមហ៊ុនមានសាខាច្រើនជាង ៣០០ នៅទូទាំងប្រទេសកម្ពុជា។`,
+            
+            literature: `កវី នូវ កាន់ជើងឯក ជាអ្នកនិពន្ធខ្មែរល្បីៗមួយរូប។ កំណាព្យល្បីរបស់គាត់ដូចជា "ក្តីស្រលាញ់ខ្មែរ" បានទទួលការទទួលស្គាល់យ៉ាងខ្លាំង។ គាត់កើតនៅខេត្តកំពង់ចាម និងបានស្លាប់នៅឆ្នាំ១៩៦៩។`
+        };
+
+        // Mock NER processing function
+        function processKhmerText(text) {
+            // Mock entity detection patterns
+            const entities = [];
+            
+            // Person detection (names with titles)
+            const personPatterns = [
+                /(លោក|អ្នកស្រី|សម្តេច|ព្រះ|អ្នកឧកញ៉ា)\s+([ក-អ៊]+(?:\s+[ក-អ៊]+){0,2})/g,
+                /([ក-អ៊]+)\s+([ក-អ៊]+)/g  // Simple name pattern
+            ];
+            
+            // Location detection
+            const locationPatterns = [
+                /(ភ្នំពេញ|សៀមរាប|ព្រះសីហនុ|កំពង់ចាម|បាត់ដំបង)/g,
+                /(ខេត្ត|រាជធានី|ក្រុង)\s+([ក-អ៊]+)/g
+            ];
+            
+            // Organization detection
+            const orgPatterns = [
+                /(ក្រុមហ៊ុន|ធនាគារ|អង្គការ|ក្រសួង|រដ្ឋសភា)\s+([ក-អ៊]+(?:\s+[ក-អ៊]+){0,3})/g
+            ];
+            
+            // Date detection
+            const datePatterns = [
+                /ថ្ងៃទី\d+\s+ខែ[ក-អ៊]+\s+ឆ្នាំ\d+/g,
+                /ខែ[ក-អ៊]+\s+ឆ្នាំ\d+/g
+            ];
+            
+            // Money detection
+            const moneyPatterns = [
+                /\d+\s+(លាន|ពាន់|រយ)\s+ដុល្លារ/g,
+                /\d+\s+ដុល្លារ/g
+            ];
+            
+            // Combine all patterns
+            const patterns = [
+                {regex: personPatterns, type: 'person'},
+                {regex: locationPatterns, type: 'location'},
+                {regex: orgPatterns, type: 'organization'},
+                {regex: datePatterns, type: 'date'},
+                {regex: moneyPatterns, type: 'money'}
+            ];
+            
+            // Find all entities
+            patterns.forEach(patternSet => {
+                patternSet.regex.forEach(regex => {
+                    let match;
+                    while ((match = regex.exec(text)) !== null) {
+                        entities.push({
+                            text: match[0],
+                            type: patternSet.type,
+                            start: match.index,
+                            end: match.index + match[0].length
+                        });
+                    }
+                });
+            });
+            
+            // Remove duplicates
+            const uniqueEntities = [];
+            const seen = new Set();
+            entities.forEach(entity => {
+                const key = entity.text + entity.start;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueEntities.push(entity);
+                }
+            });
+            
+            return uniqueEntities.sort((a, b) => a.start - b.start);
+        }
+
+        // Main analysis function
+        function analyzeText() {
+            const inputText = document.getElementById('inputText').value;
+            if (!inputText.trim()) {
+                alert('សូមបញ្ចូលអត្ថបទខ្មែរមុន!');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            
+            // Simulate processing delay
+            setTimeout(() => {
+                const entities = processKhmerText(inputText);
+                displayResults(inputText, entities);
+                updateStats(entities);
+                updateEntityList(entities);
+                
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                
+                // Success message
+                showNotification('បានវិភាគដោយជោគជ័យ! រកឃើញ ' + entities.length + ' ឈ្មោះពិសេស', 'success');
+            }, 1500);
+        }
+
+        // Display results with highlighted entities
+        function displayResults(text, entities) {
+            let resultHTML = '';
+            let lastIndex = 0;
+            
+            // Sort entities by start position
+            entities.sort((a, b) => a.start - b.start);
+            
+            // Build highlighted text
+            entities.forEach(entity => {
+                // Add text before entity
+                resultHTML += text.substring(lastIndex, entity.start);
+                
+                // Add highlighted entity
+                resultHTML += `<span class="entity-tag ${entity.type}" 
+                    data-tooltip="${getTypeKhmer(entity.type)}" 
+                    style="cursor: pointer;"
+                    onclick="showEntityInfo('${entity.text}', '${entity.type}')">
+                    ${entity.text}
+                </span>`;
+                
+                lastIndex = entity.end;
+            });
+            
+            // Add remaining text
+            resultHTML += text.substring(lastIndex);
+            
+            // Update results box
+            document.getElementById('resultsBox').innerHTML = resultHTML;
+        }
+
+        // Update statistics
+        function updateStats(entities) {
+            const counts = {
+                person: 0,
+                location: 0,
+                organization: 0,
+                date: 0,
+                money: 0
+            };
+            
+            entities.forEach(entity => {
+                if (counts.hasOwnProperty(entity.type)) {
+                    counts[entity.type]++;
+                }
+            });
+            
+            document.getElementById('personCount').textContent = counts.person;
+            document.getElementById('locationCount').textContent = counts.location;
+            document.getElementById('orgCount').textContent = counts.organization;
+            document.getElementById('totalCount').textContent = entities.length;
+        }
+
+        // Update entity list
+        function updateEntityList(entities) {
+            const entityList = document.getElementById('entityList');
+            const grouped = {};
+            
+            // Group entities by type
+            entities.forEach(entity => {
+                if (!grouped[entity.type]) {
+                    grouped[entity.type] = [];
+                }
+                if (!grouped[entity.type].includes(entity.text)) {
+                    grouped[entity.type].push(entity.text);
+                }
+            });
+            
+            // Build list HTML
+            let html = '';
+            Object.keys(grouped).forEach(type => {
+                html += `<div style="margin-bottom: 15px;">`;
+                html += `<strong style="color: ${getTypeColor(type)};">${getTypeKhmer(type)} (${grouped[type].length})</strong>`;
+                html += `<div style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 5px;">`;
+                grouped[type].forEach(text => {
+                    html += `<span class="entity-tag ${type}" 
+                        style="font-size: 0.8rem; cursor: pointer;"
+                        onclick="showEntityInfo('${text}', '${type}')">
+                        ${text}
+                    </span>`;
+                });
+                html += `</div></div>`;
+            });
+            
+            entityList.innerHTML = html || '<p style="text-align: center; color: #94a3b8;">មិនមានឈ្មោះពិសេសត្រូវបានរកឃើញ</p>';
+        }
+
+        // Helper functions
+        function getTypeKhmer(type) {
+            const map = {
+                'person': 'ឈ្មោះមនុស្ស',
+                'location': 'ទីតាំង',
+                'organization': 'អង្គការ',
+                'date': 'កាលបរិច្ឆេទ',
+                'money': 'ប្រាក់'
+            };
+            return map[type] || type;
+        }
+
+        function getTypeColor(type) {
+            const map = {
+                'person': '#3b82f6',
+                'location': '#10b981',
+                'organization': '#f59e0b',
+                'date': '#8b5cf6',
+                'money': '#ef4444'
+            };
+            return map[type] || '#64748b';
+        }
+
+        // UI Functions
+        function loadSample(type) {
+            document.getElementById('inputText').value = samples[type] || '';
+        }
+
+        function clearText() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('resultsBox').innerHTML = `
+                <p style="text-align: center; color: #94a3b8; padding: 40px;">
+                    <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+                    លទ្ធផលនឹងបង្ហាញនៅទីនេះ។<br>
+                    សូមបញ្ចូលអត្ថបទ រួចចុច "វិភាគអត្ថបទ"
+                </p>`;
+            document.getElementById('entityList').innerHTML = '';
+            updateStats([]);
+        }
+
+        function speakText() {
+            const text = document.getElementById('inputText').value;
+            if ('speechSynthesis' in window && text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'km-KH';
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('ប្រព័ន្ធនិយាយមិនដំណើរការនៅឡើយទេ។');
+            }
+        }
+
+        function showEntityInfo(text, type) {
+            alert(`ឈ្មោះពិសេស: ${text}\nប្រភេទ: ${getTypeKhmer(type)}\n\nចុច OK ដើម្បីស្វែងរកព័ត៌មានបន្ថែម។`);
+            // In real implementation, this would open a modal or new page
+        }
+
+        function exportResults(format) {
+            const entities = document.getElementById('entityList').innerText;
+            const text = document.getElementById('inputText').value;
+            
+            let content = '';
+            switch(format) {
+                case 'json':
+                    content = JSON.stringify({text: text, entities: entities}, null, 2);
+                    break;
+                case 'excel':
+                    content = 'ឈ្មោះពិសេស,ប្រភេទ\n' + entities.split('\n').join(',');
+                    break;
+                default:
+                    content = `របាយការណ៍ NER ខ្មែរ\n\nអត្ថបទ: ${text}\n\nឈ្មោះពិសេស:\n${entities}`;
+            }
+            
+            const blob = new Blob([content], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ner_results_${new Date().getTime()}.${format}`;
+            a.click();
+            
+            showNotification('បានទាញយកឯកសារ ' + format.toUpperCase() + '!', 'success');
+        }
+
+        function copyResults() {
+            const entities = document.getElementById('entityList').innerText;
+            const text = document.getElementById('inputText').value;
+            
+            navigator.clipboard.writeText(`អត្ថបទ: ${text}\n\nឈ្មោះពិសេស:\n${entities}`)
+                .then(() => showNotification('បានចម្លងទៅក្តារតម្បៀតខ្ទាស់!', 'success'))
+                .catch(() => showNotification('មិនអាចចម្លងបានទេ!', 'error'));
+        }
+
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'success' ? '#10b981' : '#ef4444'};
+                color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                max-width: 300px;
+            `;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+            
+            // Add animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function showTutorial() {
+            alert('ការណែនាំប្រើប្រាស់:\n\n1. បញ្ចូលអត្ថបទខ្មែរនៅក្នុងប្រអប់\n2. ចុចប៊ូតុង "វិភាគអត្ថបទ"\n3. មើលឈ្មោះពិសេសដែលត្រូវបានបង្ហាញជាពណ៌\n4. ចុចលើឈ្មោះពណ៌ដើម្បីមើលព័ត៌មានលម្អិត\n5. ទាញយកលទ្ធផលក្នុងទម្រង់ផ្សេងៗ');
+        }
+
+        // Initialize with sample text
+        window.onload = function() {
+            // Auto-load news sample
+            loadSample('news');
+        }
+    </script>
+</body>
+</html>
